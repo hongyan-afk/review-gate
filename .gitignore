@@ -1,0 +1,7 @@
+build
+deps
+node_modules
+package.json
+package-lock.json
+*.tgz
+.DS_Store
