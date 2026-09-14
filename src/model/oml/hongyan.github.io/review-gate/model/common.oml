@@ -1,0 +1,65 @@
+@dc:title "Shared Elements"
+@dc:description "Individuals shared by both deployments: the error classes and the configuration versions."
+description <https://hongyan.github.io/review-gate/model/common#> as common {
+    uses <http://purl.org/dc/elements/1.1/> as dc
+    uses <https://hongyan.github.io/review-gate/method/gate#> as gate
+
+    // error classes
+
+    @dc:description "A critical defect in the artifact that the review failed to catch."
+    instance ecMissedCritical : gate:ErrorClass [
+        gate:hasId "EC-1"
+        gate:label "Missed critical defect"
+    ]
+
+    @dc:description "A claim with no supporting justification."
+    instance ecUnsupportedClaim : gate:ErrorClass [
+        gate:hasId "EC-2"
+        gate:label "Unsupported claim"
+    ]
+
+    @dc:description "Systematic over- or under-judgment of a whole class of artifacts."
+    instance ecBias : gate:ErrorClass [
+        gate:hasId "EC-3"
+        gate:label "Systematic bias"
+    ]
+
+    @dc:description "The same artifact judged differently on repeated review."
+    instance ecInconsistency : gate:ErrorClass [
+        gate:hasId "EC-4"
+        gate:label "Inconsistent judgment"
+    ]
+
+    @dc:description "Judgment driven by irrelevant features, such as length or formatting. No checkpoint guards this one."
+    instance ecIrrelevantFeature : gate:ErrorClass [
+        gate:hasId "EC-5"
+        gate:label "Construct-irrelevant variance"
+    ]
+
+    // configuration versions
+
+    @dc:description "The scoring gauge's model label, as it appears in the results spreadsheet."
+    instance vGemma431b : gate:ConfigVersion [
+        gate:hasId "gemma4_31b"
+        gate:label "gemma4_31b (column-prefix label, identity unverified)"
+    ]
+
+    @dc:description "First configuration of the code-review AI gauge."
+    instance vCodeModelV1 : gate:ConfigVersion [
+        gate:hasId "code-model-v1"
+        gate:label "Code review model, configuration v1"
+    ]
+
+    @dc:description "Second configuration of the code-review AI gauge. No qualification record certifies it yet."
+    instance vCodeModelV2 : gate:ConfigVersion [
+        gate:hasId "code-model-v2"
+        gate:label "Code review model, configuration v2"
+        gate:supersedes vCodeModelV1
+    ]
+
+    @dc:description "The calibration batch the human reference was calibrated on: sixty double-rated syllabi."
+    instance vSeedSet2026a : gate:ConfigVersion [
+        gate:hasId "seedset-2026a"
+        gate:label "Calibration batch 2026a (sixty double-rated syllabi)"
+    ]
+}

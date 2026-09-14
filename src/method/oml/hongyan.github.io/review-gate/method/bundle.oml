@@ -1,0 +1,7 @@
+@dc:title "Review Gate Method Bundle"
+@dc:description "Closes the world over the gate and trace vocabularies, so sibling concepts become disjoint."
+vocabulary bundle <https://hongyan.github.io/review-gate/method/bundle#> as v-bundle {
+    includes <http://purl.org/dc/elements/1.1/> as dc
+    includes <https://hongyan.github.io/review-gate/method/trace#>
+    includes <https://hongyan.github.io/review-gate/method/gate#>
+}

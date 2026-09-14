@@ -1,0 +1,183 @@
+@dc:title "Deployment: Code Review"
+@dc:description "The design-stage deployment. Hand-authored illustrations; no operational review events exist yet."
+description <https://hongyan.github.io/review-gate/model/code-review#> as code-review {
+    uses <http://purl.org/dc/elements/1.1/> as dc
+    uses <https://hongyan.github.io/review-gate/method/gate#> as gate
+    uses <https://hongyan.github.io/review-gate/method/trace#> as trace
+    extends <https://hongyan.github.io/review-gate/model/common#> as common
+
+    // deployment
+
+    @dc:description "The code-review installation. The human review role is designed but not yet staffed."
+    instance dCodeReview : gate:Deployment [
+        gate:hasId "DEP-CODE"
+        gate:label "Code review (design stage)"
+    ]
+
+    // gauges
+
+    @dc:description "The code-review AI gauge. Runs v2 while its only qualification certifies v1."
+    instance gCodeAI : gate:AIGauge [
+        gate:hasId "G-CODE-AI"
+        gate:label "AI code reviewer"
+        gate:isDeployedIn dCodeReview
+        gate:runsVersion common:vCodeModelV2
+        gate:holdsQualification qCodeAI
+    ]
+
+    @dc:description "The student reviewer role: designed, not yet staffed, so it holds no qualification."
+    instance gStudentReviewer : gate:HumanGauge [
+        gate:hasId "G-CODE-HUMAN"
+        gate:label "Student reviewer (role designed, not yet staffed)"
+        gate:isDeployedIn dCodeReview
+    ]
+
+    // checkpoints
+
+    @dc:description "Where every change is reviewed by the AI."
+    instance cpAiReview : gate:Checkpoint [
+        gate:hasId "CP-CODE-AI"
+        gate:label "AI code review checkpoint"
+        gate:isDeployedIn dCodeReview
+        gate:isOperatedBy gCodeAI
+        gate:verdictRule "LGTM reads as approve, a blocking comment as reject, any other change request as revise."
+    ]
+
+    @dc:description "Where a human reviews a change."
+    instance cpHumanReview : gate:Checkpoint [
+        gate:hasId "CP-CODE-HUMAN"
+        gate:label "Human code review checkpoint"
+        gate:isDeployedIn dCodeReview
+        gate:isOperatedBy gStudentReviewer
+        gate:verdictRule "LGTM reads as approve, a blocking comment as reject, any other change request as revise."
+    ]
+
+    @dc:description "A formatting checkpoint that guards no error class yet."
+    instance cpFormatCheck : gate:Checkpoint [
+        gate:hasId "CP-CODE-FORMAT"
+        gate:label "Formatting checkpoint (guards nothing yet)"
+        gate:isDeployedIn dCodeReview
+        gate:isOperatedBy gCodeAI
+    ]
+
+    // guards (with tolerances)
+    relation instance gdAiMissed : gate:Guards [
+        from cpAiReview
+        to common:ecMissedCritical
+        gate:toleranceLabel "at most 1 missed critical defect per 20 seeded"
+        gate:toleranceMaxMissed 1
+        gate:toleranceSampleSize 20
+    ]
+
+    @dc:description "The AI checkpoint repeats its review of the same change and counts its own verdict flips."
+    relation instance gdAiInconsistency : gate:Guards [
+        from cpAiReview
+        to common:ecInconsistency
+        gate:toleranceLabel "at most 2 verdict flips per 20 repeated reviews"
+        gate:toleranceMaxMissed 2
+        gate:toleranceSampleSize 20
+    ]
+
+    relation instance gdHumanMissed : gate:Guards [
+        from cpHumanReview
+        to common:ecMissedCritical
+        gate:toleranceLabel "at most 1 missed critical defect per 20 seeded"
+        gate:toleranceMaxMissed 1
+        gate:toleranceSampleSize 20
+    ]
+
+    relation instance gdHumanUnsupported : gate:Guards [
+        from cpHumanReview
+        to common:ecUnsupportedClaim
+        gate:toleranceLabel "at most 2 unsupported change justifications per 20"
+        gate:toleranceMaxMissed 2
+        gate:toleranceSampleSize 20
+    ]
+
+    // qualification records
+
+    @dc:description "Certifies configuration v1 only. The gauge now runs v2."
+    instance qCodeAI : gate:QualificationRecord [
+        gate:hasId "QR-CODE-AI-1"
+        gate:label "Qualification of the AI code reviewer at configuration v1"
+        gate:certifiesVersion common:vCodeModelV1
+        gate:qualifiesFor common:ecMissedCritical
+        gate:qualifiesFor common:ecInconsistency
+        gate:qualifiedTolerance "zero misses on 59 seeded artifacts (5 percent bound)"
+        trace:sourceRef "Seeded-defect qualification run; illustrative instance"
+    ]
+
+    // release policies (one per provenance path, this deployment only)
+
+    @dc:description "Human-authored changes clear the human review and the AI review."
+    instance pCodeHumanAuthored : gate:ReleasePolicy [
+        gate:hasId "RP-CODE-HUMAN"
+        gate:label "Code review release policy for human-authored changes"
+        gate:isDeployedIn dCodeReview
+        gate:coversPath "humanAuthored"
+        gate:requiresCheckpoint cpHumanReview
+        gate:requiresCheckpoint cpAiReview
+    ]
+
+    @dc:description "AI-assisted changes take the same two checkpoints."
+    instance pCodeAiAssisted : gate:ReleasePolicy [
+        gate:hasId "RP-CODE-ASSISTED"
+        gate:label "Code review release policy for AI-assisted changes"
+        gate:isDeployedIn dCodeReview
+        gate:coversPath "aiAssisted"
+        gate:requiresCheckpoint cpHumanReview
+        gate:requiresCheckpoint cpAiReview
+    ]
+
+    @dc:description "AI-generated changes are reviewed by the AI alone."
+    instance pCodeAiGenerated : gate:ReleasePolicy [
+        gate:hasId "RP-CODE-GENERATED"
+        gate:label "Code review release policy for AI-generated changes"
+        gate:isDeployedIn dCodeReview
+        gate:coversPath "aiGenerated"
+        gate:requiresCheckpoint cpAiReview
+    ]
+
+    // artifacts
+
+    @dc:description "A test change carrying a known critical defect."
+    instance artChange1 : gate:Artifact [
+        gate:hasId "CHG-0001"
+        gate:label "Code change 1 (AI-generated, seeded critical defect)"
+        gate:isDeployedIn dCodeReview
+        gate:hasProvenance "aiGenerated"
+        gate:hasKnownDefectIn common:ecMissedCritical
+    ]
+
+    @dc:description "A human-authored change with no seeded defect."
+    instance artChange2 : gate:Artifact [
+        gate:hasId "CHG-0002"
+        gate:label "Code change 2 (human-authored)"
+        gate:isDeployedIn dCodeReview
+        gate:hasProvenance "humanAuthored"
+    ]
+
+    // review activities and records
+    // Deployment membership of activities and records is derived by rule, not asserted.
+
+    @dc:description "Approved a change that carries a seeded critical defect."
+    instance raC1 : gate:ReviewActivity [
+        gate:hasId "RA-C1"
+        gate:performedAt cpAiReview
+        gate:evaluates artChange1
+        gate:hasVerdict "approve"
+        gate:rawVerdictLabel "LGTM"
+        gate:citesQualification qCodeAI
+    ]
+
+    @dc:description "The record behind RA-C1. Its known residual is the recorded miss."
+    instance vrC1 : gate:VerificationRecord [
+        gate:hasId "VR-C1"
+        gate:documents raC1
+        gate:addresses common:ecMissedCritical
+        gate:claimText "Change 1 introduces no critical defect"
+        gate:detectionRoute "Static analysis plus diff review against the seeded defect list"
+        gate:responsibleRole "qualityOwner"
+        gate:knownResidual "The seeded critical defect in change 1 was approved: a recorded miss"
+    ]
+}

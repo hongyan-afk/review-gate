@@ -1,0 +1,9 @@
+@dc:title "Review Gate Model Bundle"
+@dc:description "The shared elements plus both deployment descriptions, closed under the method bundle."
+description bundle <https://hongyan.github.io/review-gate/model/bundle#> as d-bundle {
+    uses <http://purl.org/dc/elements/1.1/> as dc
+    uses <https://hongyan.github.io/review-gate/method/bundle#>
+    includes <https://hongyan.github.io/review-gate/model/common#>
+    includes <https://hongyan.github.io/review-gate/model/code-review#>
+    includes <https://hongyan.github.io/review-gate/model/grading#>
+}

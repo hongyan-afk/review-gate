@@ -1,0 +1,28 @@
+@dc:title "Trace Vocabulary"
+@dc:description "What a protocol record is, and how records trace to one another. The gate vocabulary extends this instead of redefining it."
+vocabulary <https://hongyan.github.io/review-gate/method/trace#> as trace {
+    extends <http://purl.org/dc/elements/1.1/> as dc
+    extends <http://www.w3.org/2001/XMLSchema#> as xsd
+
+    @dc:description "Any record kept by the protocol: something that can be traced to and from."
+    aspect Record
+
+    @dc:description "A record that carries evidence (a qualification, a verification record)."
+    concept EvidenceRecord < Record
+
+    @dc:description "A record that carries a decision (a verdict)."
+    concept DecisionRecord < Record
+
+    @dc:description "A generic trace link: one record rests on another."
+    relation traces [
+        from Record
+        to Record
+        reverse isTracedBy
+    ]
+
+    @dc:description "Where the content of this record originally lives (document, table, file)."
+    scalar property sourceRef [
+        domain Record
+        range xsd:string
+    ]
+}

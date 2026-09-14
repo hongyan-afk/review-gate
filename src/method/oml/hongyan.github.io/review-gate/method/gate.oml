@@ -1,0 +1,369 @@
+@dc:title "Review Gate Vocabulary"
+@dc:description "Kinds and rules of a human-AI review gate: checkpoints staffed by qualified gauges guard error classes at stated tolerances, and emit verdicts with five-part verification records."
+vocabulary <https://hongyan.github.io/review-gate/method/gate#> as gate {
+    extends <http://purl.org/dc/elements/1.1/> as dc
+    extends <http://www.w3.org/2001/XMLSchema#> as xsd
+    extends <https://hongyan.github.io/review-gate/method/trace#> as trace
+
+    // aspects
+
+    @dc:description "Anything with a stable business identifier."
+    aspect Identified [
+        key hasId
+    ]
+
+    @dc:description "Anything that belongs to one deployment."
+    aspect DeploymentScoped
+
+    // concepts
+
+    @dc:description "One installation of the review gate process, e.g. code review or syllabus scoring."
+    concept Deployment < Identified
+
+    @dc:description "A review gate an artifact must clear. Staffed by exactly one gauge."
+    concept Checkpoint < DeploymentScoped, Identified [
+        restricts isOperatedBy to exactly 1
+    ]
+
+    @dc:description "A reviewing agent, qualified for named error classes at stated tolerances."
+    concept Gauge < DeploymentScoped, Identified
+
+    @dc:description "A gauge whose judgment is produced by human reviewers."
+    concept HumanGauge < Gauge
+
+    @dc:description "A gauge whose judgment is produced by a model configuration."
+    concept AIGauge < Gauge [
+        restricts runsVersion to min 1
+    ]
+
+    @dc:description "The thing under review: a code change in one deployment, a syllabus in the other."
+    concept Artifact < DeploymentScoped, Identified [
+        restricts hasProvenance to exactly 1
+    ]
+
+    @dc:description "An artifact produced by an AI. Defined with =, so the reasoner classifies it."
+    concept AiGeneratedArtifact = Artifact [
+        restricts hasProvenance to "aiGenerated"
+    ]
+
+    @dc:description "A kind of review failure. Some are defects in the artifact, some are ways a gauge's own judgment goes wrong."
+    concept ErrorClass < Identified
+
+    @dc:description "What a qualification is pinned to: a model configuration, or a calibration batch."
+    concept ConfigVersion < Identified
+
+    @dc:description "Evidence that a gauge is qualified for given error classes at one version."
+    concept QualificationRecord < trace:EvidenceRecord, Identified
+
+    @dc:description "One execution of a checkpoint on an artifact."
+    concept ReviewActivity < trace:DecisionRecord, DeploymentScoped, Identified [
+        restricts performedAt to exactly 1
+        restricts evaluates to exactly 1
+        restricts hasVerdict to exactly 1
+    ]
+
+    @dc:description "The five-part record behind a review activity: claim, error class, detection route, responsible role, known residual."
+    concept VerificationRecord < trace:EvidenceRecord, DeploymentScoped, Identified [
+        restricts documents to exactly 1
+        restricts addresses to exactly 1
+        restricts claimText to exactly 1
+        restricts detectionRoute to exactly 1
+        restricts responsibleRole to exactly 1
+        restricts knownResidual to exactly 1
+    ]
+
+    @dc:description "Which checkpoints an artifact on one provenance path must clear."
+    concept ReleasePolicy < DeploymentScoped, Identified [
+        restricts coversPath to exactly 1
+    ]
+
+    // the guarding relation
+
+    @dc:description "A checkpoint guards an error class at a stated tolerance. Reified so the tolerance sits on the link."
+    relation entity Guards [
+        from Checkpoint
+        to ErrorClass
+        forward guards
+        reverse isGuardedBy
+    ]
+
+    @dc:description "The tolerance in words. It also fixes what counts as one occurrence."
+    scalar property toleranceLabel [
+        domain Guards
+        range xsd:string
+        functional
+    ]
+
+    @dc:description "How many occurrences the checkpoint may fail to catch."
+    scalar property toleranceMaxMissed [
+        domain Guards
+        range xsd:integer
+        functional
+    ]
+
+    @dc:description "The sample the tolerance refers to."
+    scalar property toleranceSampleSize [
+        domain Guards
+        range xsd:integer
+        functional
+    ]
+
+    // relations
+
+    @dc:description "The deployment an element belongs to."
+    relation isDeployedIn [
+        from DeploymentScoped
+        to Deployment
+        reverse hosts
+        functional
+    ]
+
+    @dc:description "The one gauge that staffs a checkpoint."
+    relation isOperatedBy [
+        from Checkpoint
+        to Gauge
+        reverse operates
+        functional
+    ]
+
+    @dc:description "A gauge holds a qualification record."
+    relation holdsQualification [
+        from Gauge
+        to QualificationRecord
+        reverse qualifies
+    ]
+
+    @dc:description "The error classes a qualification record covers."
+    relation qualifiesFor [
+        from QualificationRecord
+        to ErrorClass
+        reverse isCoveredBy
+    ]
+
+    @dc:description "The one version a qualification record certifies."
+    relation certifiesVersion [
+        from QualificationRecord
+        to ConfigVersion
+        reverse isCertifiedBy
+        functional
+    ]
+
+    @dc:description "The versions a gauge runs. Not functional: a gauge can run more than one at a time."
+    relation runsVersion [
+        from Gauge
+        to ConfigVersion
+        reverse isRunBy
+    ]
+
+    @dc:description "A version replaces the one before it in the same lineage. Irreflexive and asymmetric, but not transitive, so generations stay countable."
+    relation supersedes [
+        from ConfigVersion
+        to ConfigVersion
+        reverse isSupersededBy
+        irreflexive
+        asymmetric
+    ]
+
+    @dc:description "The checkpoint at which a review activity took place."
+    relation performedAt [
+        from ReviewActivity
+        to Checkpoint
+        reverse isSiteOf
+        functional
+    ]
+
+    @dc:description "The gauge that performed a review activity. Derived by rule."
+    relation performedBy [
+        from ReviewActivity
+        to Gauge
+        reverse performed
+        functional
+    ]
+
+    @dc:description "The artifact a review activity examined."
+    relation evaluates [
+        from ReviewActivity
+        to Artifact
+        reverse isEvaluatedBy
+        functional
+    ]
+
+    @dc:description "The error classes a review activity checked for. Derived by rule."
+    relation checksFor [
+        from ReviewActivity
+        to ErrorClass
+        reverse isCheckedBy
+    ]
+
+    @dc:description "A verification record documents one review activity."
+    relation documents [
+        from VerificationRecord
+        to ReviewActivity
+        reverse isDocumentedBy
+        functional
+    ] < trace:traces
+
+    @dc:description "The error class a verification record addresses."
+    relation addresses [
+        from VerificationRecord
+        to ErrorClass
+        reverse isAddressedBy
+        functional
+    ]
+
+    @dc:description "A checkpoint a release policy requires."
+    relation requiresCheckpoint [
+        from ReleasePolicy
+        to Checkpoint
+        reverse isRequiredBy
+    ]
+
+    @dc:description "The qualification record a verdict rests on."
+    relation citesQualification [
+        from ReviewActivity
+        to QualificationRecord
+        reverse isCitedBy
+    ] < trace:traces
+
+    @dc:description "A test artifact carries a planted defect of this error class."
+    relation hasKnownDefectIn [
+        from Artifact
+        to ErrorClass
+        reverse isKnownDefectClassOf
+    ]
+
+    @dc:description "The release policy that governs an artifact. Derived by rule."
+    relation isGovernedBy [
+        from Artifact
+        to ReleasePolicy
+        reverse governs
+    ]
+
+    // scalars
+
+    @dc:description "The verdict vocabulary shared by both deployments."
+    scalar VerdictKind [
+        oneOf "approve", "revise", "reject"
+    ] = xsd:string
+
+    @dc:description "How an artifact was produced."
+    scalar ProvenanceKind [
+        oneOf "humanAuthored", "aiAssisted", "aiGenerated"
+    ] = xsd:string
+
+    @dc:description "The four accountable roles."
+    scalar RoleKind [
+        oneOf "artifactAuthor", "humanReviewer", "qualityOwner", "auditFunction"
+    ] = xsd:string
+
+    @dc:description "The business identifier, e.g. CP-CODE-AI."
+    scalar property hasId [
+        domain Identified
+        range xsd:string
+        functional
+    ]
+
+    @dc:description "Display name."
+    scalar property label [
+        domain Identified
+        range xsd:string
+        functional
+    ]
+
+    @dc:description "The verdict a review activity issued."
+    scalar property hasVerdict [
+        domain ReviewActivity
+        range VerdictKind
+        functional
+    ]
+
+    @dc:description "The deployment's own label for the verdict, kept verbatim."
+    scalar property rawVerdictLabel [
+        domain ReviewActivity
+        range xsd:string
+        functional
+    ]
+
+    @dc:description "How this checkpoint's raw output reads as a verdict."
+    scalar property verdictRule [
+        domain Checkpoint
+        range xsd:string
+        functional
+    ]
+
+    @dc:description "How the artifact was produced. Declared by the submitter, not detected."
+    scalar property hasProvenance [
+        domain Artifact
+        range ProvenanceKind
+        functional
+    ]
+
+    @dc:description "The provenance path this release policy covers."
+    scalar property coversPath [
+        domain ReleasePolicy
+        range ProvenanceKind
+        functional
+    ]
+
+    @dc:description "Record part 1: what was claimed."
+    scalar property claimText [
+        domain VerificationRecord
+        range xsd:string
+        functional
+    ]
+
+    @dc:description "Record part 3: how the error would have been detected."
+    scalar property detectionRoute [
+        domain VerificationRecord
+        range xsd:string
+        functional
+    ]
+
+    @dc:description "Record part 4: which role signed off."
+    scalar property responsibleRole [
+        domain VerificationRecord
+        range RoleKind
+        functional
+    ]
+
+    @dc:description "Record part 5: what risk is known to remain."
+    scalar property knownResidual [
+        domain VerificationRecord
+        range xsd:string
+        functional
+    ]
+
+    @dc:description "The tolerance a gauge was qualified at."
+    scalar property qualifiedTolerance [
+        domain QualificationRecord
+        range xsd:string
+        functional
+    ]
+
+    // rules
+
+    @dc:description "The gauge that performed an activity is the operator of the checkpoint where it took place."
+    rule GaugeOfActivity [
+        performedAt(a, cp) & isOperatedBy(cp, g) -> performedBy(a, g)
+    ]
+
+    @dc:description "An activity checks for every error class its checkpoint guards."
+    rule ChecksFor [
+        performedAt(a, cp) & guards(cp, ec) -> checksFor(a, ec)
+    ]
+
+    @dc:description "An activity belongs to the deployment of the checkpoint where it took place."
+    rule DeploymentOfActivity [
+        performedAt(a, cp) & isDeployedIn(cp, d) -> isDeployedIn(a, d)
+    ]
+
+    @dc:description "A verification record belongs to the deployment of the activity it documents."
+    rule DeploymentOfRecord [
+        documents(vr, a) & isDeployedIn(a, d) -> isDeployedIn(vr, d)
+    ]
+
+    @dc:description "An artifact is governed by the release policy of its own deployment that covers its provenance path."
+    rule PolicyOfArtifact [
+        hasProvenance(a, k) & isDeployedIn(a, d) & coversPath(p, k) & isDeployedIn(p, d) -> isGovernedBy(a, p)
+    ]
+}

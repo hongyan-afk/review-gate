@@ -1,0 +1,236 @@
+@dc:title "Deployment: AI Syllabus Scoring"
+@dc:description "The operating deployment: an AI scorer and a human reference. The deployment records scores, not verdicts, so each checkpoint states how a score reads as a verdict."
+description <https://hongyan.github.io/review-gate/model/grading#> as grading {
+    uses <http://purl.org/dc/elements/1.1/> as dc
+    uses <https://hongyan.github.io/review-gate/method/gate#> as gate
+    uses <https://hongyan.github.io/review-gate/method/trace#> as trace
+    extends <https://hongyan.github.io/review-gate/model/common#> as common
+
+    // deployment
+
+    @dc:description "The syllabus-scoring installation: 11,327 syllabi scored against 17 learning goals."
+    instance dGrading : gate:Deployment [
+        gate:hasId "DEP-GRADING"
+        gate:label "AI syllabus scoring (operating, producing data)"
+    ]
+
+    // gauges
+
+    @dc:description "The AI scorer."
+    instance gAiScorer : gate:AIGauge [
+        gate:hasId "G-SCORER"
+        gate:label "AI syllabus scorer"
+        gate:isDeployedIn dGrading
+        gate:runsVersion common:vGemma431b
+        gate:holdsQualification qAiScorer
+    ]
+
+    @dc:description "The human reference: two raters combined by a stated rule, a goal counts as present when their mean is at least 2."
+    instance gHumanRef : gate:HumanGauge [
+        gate:hasId "G-HUMAN-REF"
+        gate:label "Rule-derived human reference"
+        gate:isDeployedIn dGrading
+        gate:runsVersion common:vSeedSet2026a
+        gate:holdsQualification qHumanRef
+    ]
+
+    // checkpoints
+
+    @dc:description "Where every syllabus is scored by the AI."
+    instance cpAiScorer : gate:Checkpoint [
+        gate:hasId "CP-SCORE-AI"
+        gate:label "AI scoring checkpoint"
+        gate:isDeployedIn dGrading
+        gate:isOperatedBy gAiScorer
+        gate:verdictRule "A goal's salience at or above 0.5, the scoring engine's declared consensus threshold, reads as approve; below it reads as reject. This checkpoint issues no revise verdict."
+    ]
+
+    @dc:description "Where the human reference is applied."
+    instance cpHumanRef : gate:Checkpoint [
+        gate:hasId "CP-SCORE-HUMAN"
+        gate:label "Human reference checkpoint"
+        gate:isDeployedIn dGrading
+        gate:isOperatedBy gHumanRef
+        gate:verdictRule "A goal's mean of the two raters' 0-3 ratings at or above 2 reads as approve; below it reads as reject. A convenience rule, not adjudication."
+    ]
+
+    // guards (with tolerances)
+    relation instance gdScorerMissed : gate:Guards [
+        from cpAiScorer
+        to common:ecMissedCritical
+        gate:toleranceLabel "at most 3 missed goals per 60 double-rated syllabi"
+        gate:toleranceMaxMissed 3
+        gate:toleranceSampleSize 60
+    ]
+
+    relation instance gdScorerUnsupported : gate:Guards [
+        from cpAiScorer
+        to common:ecUnsupportedClaim
+        gate:toleranceLabel "at most 6 unsupported goal claims per 60 syllabi"
+        gate:toleranceMaxMissed 6
+        gate:toleranceSampleSize 60
+    ]
+
+    relation instance gdHumanMissed : gate:Guards [
+        from cpHumanRef
+        to common:ecMissedCritical
+        gate:toleranceLabel "at most 2 missed goals per 60 syllabi"
+        gate:toleranceMaxMissed 2
+        gate:toleranceSampleSize 60
+    ]
+
+    relation instance gdHumanUnsupported : gate:Guards [
+        from cpHumanRef
+        to common:ecUnsupportedClaim
+        gate:toleranceLabel "at most 3 unsupported goal claims per 60 syllabi"
+        gate:toleranceMaxMissed 3
+        gate:toleranceSampleSize 60
+    ]
+
+    @dc:description "Only the human reference guards bias. Nothing here may go undetected, hence 0."
+    relation instance gdHumanBias : gate:Guards [
+        from cpHumanRef
+        to common:ecBias
+        gate:toleranceLabel "no systematic shift beyond half a scale point over 60 syllabi"
+        gate:toleranceMaxMissed 0
+        gate:toleranceSampleSize 60
+    ]
+
+    // qualification records
+
+    @dc:description "Qualification of the AI scorer, on the ten-field template."
+    instance qAiScorer : gate:QualificationRecord [
+        gate:hasId "QR-SCORER-1"
+        gate:label "Qualification of the AI scorer at gemma4_31b"
+        gate:certifiesVersion common:vGemma431b
+        gate:qualifiesFor common:ecMissedCritical
+        gate:qualifiesFor common:ecUnsupportedClaim
+        gate:qualifiedTolerance "miss rate upper bound within tolerance on the 60-syllabus double-rated set"
+        trace:sourceRef "Qualification record template; illustrative instance"
+    ]
+
+    @dc:description "Calibration of the human reference on the 2026a batch."
+    instance qHumanRef : gate:QualificationRecord [
+        gate:hasId "QR-HUMAN-REF-1"
+        gate:label "Calibration of the human reference on seedset-2026a"
+        gate:certifiesVersion common:vSeedSet2026a
+        gate:qualifiesFor common:ecMissedCritical
+        gate:qualifiesFor common:ecUnsupportedClaim
+        gate:qualifiesFor common:ecBias
+        gate:qualifiedTolerance "two-rater agreement recorded on the 60-syllabus set"
+        trace:sourceRef "Agreement pilot data files"
+    ]
+
+    // release policies (one per provenance path, this deployment only)
+
+    @dc:description "Human-authored syllabi are scored by the AI and checked against the human reference."
+    instance pGradeHumanAuthored : gate:ReleasePolicy [
+        gate:hasId "RP-GRADE-HUMAN"
+        gate:label "Scoring release policy for human-authored syllabi"
+        gate:isDeployedIn dGrading
+        gate:coversPath "humanAuthored"
+        gate:requiresCheckpoint cpAiScorer
+        gate:requiresCheckpoint cpHumanRef
+    ]
+
+    @dc:description "AI-assisted syllabi take the same two checkpoints."
+    instance pGradeAiAssisted : gate:ReleasePolicy [
+        gate:hasId "RP-GRADE-ASSISTED"
+        gate:label "Scoring release policy for AI-assisted syllabi"
+        gate:isDeployedIn dGrading
+        gate:coversPath "aiAssisted"
+        gate:requiresCheckpoint cpAiScorer
+        gate:requiresCheckpoint cpHumanRef
+    ]
+
+    @dc:description "AI-generated syllabi are only scored by the AI."
+    instance pGradeAiGenerated : gate:ReleasePolicy [
+        gate:hasId "RP-GRADE-GENERATED"
+        gate:label "Scoring release policy for AI-generated syllabi"
+        gate:isDeployedIn dGrading
+        gate:coversPath "aiGenerated"
+        gate:requiresCheckpoint cpAiScorer
+    ]
+
+    // artifacts
+
+    @dc:description "A human-authored syllabus from the scored corpus."
+    instance artSyllabus1 : gate:Artifact [
+        gate:hasId "SYL-0001"
+        gate:label "Course syllabus 1 (human-authored)"
+        gate:isDeployedIn dGrading
+        gate:hasProvenance "humanAuthored"
+    ]
+
+    @dc:description "A syllabus with a declared AI-assisted revision."
+    instance artSyllabus2 : gate:Artifact [
+        gate:hasId "SYL-0002"
+        gate:label "Course syllabus 2 (AI-assisted revision)"
+        gate:isDeployedIn dGrading
+        gate:hasProvenance "aiAssisted"
+    ]
+
+    // review activities and records
+    // Deployment membership of activities and records is derived by rule, not asserted.
+
+    @dc:description "The complete case: verdict, full record, qualification cited."
+    instance raG1 : gate:ReviewActivity [
+        gate:hasId "RA-G1"
+        gate:performedAt cpAiScorer
+        gate:evaluates artSyllabus1
+        gate:hasVerdict "approve"
+        gate:rawVerdictLabel "salience 0.83"
+        gate:citesQualification qAiScorer
+    ]
+
+    @dc:description "The five-part record behind RA-G1."
+    instance vrG1 : gate:VerificationRecord [
+        gate:hasId "VR-G1"
+        gate:documents raG1
+        gate:addresses common:ecMissedCritical
+        gate:claimText "Syllabus 1 covers the goals it claims"
+        gate:detectionRoute "Goal-by-goal salience scoring against the fixed 17-goal list"
+        gate:responsibleRole "qualityOwner"
+        gate:knownResidual "Scores below 0.5 were not manually re-read"
+    ]
+
+    @dc:description "A verdict with no verification record."
+    instance raG2 : gate:ReviewActivity [
+        gate:hasId "RA-G2"
+        gate:performedAt cpAiScorer
+        gate:evaluates artSyllabus2
+        gate:hasVerdict "reject"
+        gate:rawVerdictLabel "salience 0.41"
+        gate:citesQualification qAiScorer
+    ]
+
+    @dc:description "A verdict with no verification record at all."
+    instance raG3 : gate:ReviewActivity [
+        gate:hasId "RA-G3"
+        gate:performedAt cpHumanRef
+        gate:evaluates artSyllabus1
+        gate:hasVerdict "approve"
+        gate:rawVerdictLabel "two-rater mean 2.5"
+        gate:citesQualification qHumanRef
+    ]
+
+    @dc:description "Full record, but the verdict cites no qualification."
+    instance raG4 : gate:ReviewActivity [
+        gate:hasId "RA-G4"
+        gate:performedAt cpHumanRef
+        gate:evaluates artSyllabus2
+        gate:hasVerdict "reject"
+        gate:rawVerdictLabel "two-rater mean 0.5"
+    ]
+
+    @dc:description "The record behind RA-G4: a bias finding against the AI scorer."
+    instance vrG4 : gate:VerificationRecord [
+        gate:hasId "VR-G4"
+        gate:documents raG4
+        gate:addresses common:ecBias
+        gate:claimText "Syllabus 2 was over-scored by the AI relative to the human reference"
+        gate:detectionRoute "Comparison of AI salience against the two-rater composite"
+        gate:responsibleRole "qualityOwner"
+        gate:knownResidual "Composite rule (mean of two raters at least 2) is a convenience rule, not adjudication"
+    ]
+}
