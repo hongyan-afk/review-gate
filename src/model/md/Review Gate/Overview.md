@@ -1,6 +1,6 @@
 # Review Gate Model
 
-One vocabulary (`method/gate`, extending the external `method/trace`), four descriptions (`model/error-classes`, `model/versions`, `model/code-review`, `model/grading`), one dataset bundle. How to read and extend it is in the method's [METHOD.md](../../../method/md/hongyan.github.io/review-gate/method/METHOD.md).
+One vocabulary (`method/gate`, extending `method/trace`), four descriptions (`model/error-classes`, `model/versions`, `model/code-review`, `model/grading`), one dataset bundle. How to read and extend it is in the method's [METHOD.md](../../../method/md/hongyan.github.io/review-gate/method/METHOD.md).
 
 ## Deployments
 

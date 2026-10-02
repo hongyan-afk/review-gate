@@ -65,8 +65,8 @@ oml render
 
 `oml reason` writes entailments to `build/owl` and `oml render` writes the pages to
 `build/web`. Last run 2026-10-01 on CLI 0.26.5, description bundle, unique names on (the default): lint
-reports no errors, validation reports two warnings and no errors, and the model reasons
-consistent. The two warnings are left in on purpose; `METHOD.md` says why.
+reports no errors, validation reports five warnings and no errors, and the model reasons
+consistent. The five warnings are left in on purpose; `METHOD.md` says why.
 
 ## The questions it has to answer
 

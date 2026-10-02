@@ -17,7 +17,7 @@ template:
 ---
 # Review Activities
 
-One row per execution of a checkpoint on an artifact. The checkpoint, the artifact and the verdict are required because a verdict missing any of them drops out of every question that would otherwise report it. The gauge is not typed in; it follows from the checkpoint by rule, so it is shown read-only. It cannot be a required column, because a count only sees what this description writes down, so the two rules below check it over the reasoned model instead. The second one checks that a verdict rests on the performing gauge's own qualification.
+One row per execution of a checkpoint on an artifact. The checkpoint, the artifact and the verdict are required because a verdict missing any of them drops out of every question that would otherwise report it. The gauge is not typed in; it follows from the checkpoint by rule, so it is shown read-only. It cannot be a required column, because a count only sees what this description writes down, so the first rule below checks it over the reasoned model instead. The other two warn when a verdict has no record behind it, or does not rest on a qualification of the performing gauge that covers what its checkpoint guards.
 
 ```table-editor
 ---
@@ -92,13 +92,28 @@ gate:ActivityShape
     ] ;
     sh:sparql [
         sh:severity sh:Warning ;
-        sh:message "This activity cites a qualification record that the gauge who performed it does not hold. Cite the performing gauge's own record." ;
+        sh:message "No verification record documents this verdict. Add one in the records table." ;
         sh:select """
             PREFIX gate: <https://hongyan.github.io/review-gate/method/gate#>
             SELECT $this WHERE {
-                $this gate:performedBy ?g ;
-                      gate:citesQualification ?q .
-                FILTER NOT EXISTS { ?g gate:holdsQualification ?q }
+                $this a gate:ReviewActivity .
+                FILTER NOT EXISTS { ?record gate:documents $this }
+            }
+        """ ;
+    ] ;
+    sh:sparql [
+        sh:severity sh:Warning ;
+        sh:message "This verdict does not cite a qualification record of the performing gauge that covers every error class its checkpoint guards. Cite the record that does." ;
+        sh:select """
+            PREFIX gate: <https://hongyan.github.io/review-gate/method/gate#>
+            SELECT DISTINCT $this WHERE {
+                $this gate:checksFor ?ec ;
+                      gate:performedBy ?g .
+                FILTER NOT EXISTS {
+                    $this gate:citesQualification ?q .
+                    ?g gate:holdsQualification ?q .
+                    ?q gate:qualifiesFor ?ec .
+                }
             }
         """ ;
     ] ;

@@ -17,7 +17,7 @@ template:
 ---
 # Verification Records
 
-A record is complete when all five parts are filled in, and this table flags one that is not. The reasoner cannot do this: a record with a missing part is not a contradiction, only an unknown. A verdict with no record at all is not a row here, since there is nothing to target; that is the second question in the README.
+A record is complete when all five parts are filled in, and this table flags one that is not. The reasoner cannot do this: a record with a missing part is not a contradiction, only an unknown. A verdict with no record at all is not a row here, since there is nothing to target; the activities table warns about it instead.
 
 ```table-editor
 ---
