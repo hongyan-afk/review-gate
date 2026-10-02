@@ -251,7 +251,7 @@ vocabulary <https://hongyan.github.io/review-gate/method/gate#> as gate {
         oneOf "humanAuthored", "aiAssisted", "aiGenerated"
     ] = xsd:string
 
-    @dc:description "The four accountable roles."
+    @dc:description "The four accountable roles. Only the quality owner is staffed today."
     scalar RoleKind [
         oneOf "artifactAuthor", "humanReviewer", "qualityOwner", "auditFunction"
     ] = xsd:string

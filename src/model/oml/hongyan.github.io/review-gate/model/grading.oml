@@ -4,9 +4,8 @@ description <https://hongyan.github.io/review-gate/model/grading#> as grading {
     uses <http://purl.org/dc/elements/1.1/> as dc
     uses <https://hongyan.github.io/review-gate/method/gate#> as gate
     uses <https://hongyan.github.io/review-gate/method/trace#> as trace
-    extends <https://hongyan.github.io/review-gate/model/common#> as common
-
-    // deployment
+    extends <https://hongyan.github.io/review-gate/model/error-classes#> as errors
+    extends <https://hongyan.github.io/review-gate/model/versions#> as versions
 
     @dc:description "The syllabus-scoring installation: 11,327 syllabi scored against 17 learning goals."
     instance dGrading : gate:Deployment [
@@ -14,14 +13,12 @@ description <https://hongyan.github.io/review-gate/model/grading#> as grading {
         gate:label "AI syllabus scoring (operating, producing data)"
     ]
 
-    // gauges
-
     @dc:description "The AI scorer."
     instance gAiScorer : gate:AIGauge [
         gate:hasId "G-SCORER"
         gate:label "AI syllabus scorer"
         gate:isDeployedIn dGrading
-        gate:runsVersion common:vGemma431b
+        gate:runsVersion versions:vGemma431b
         gate:holdsQualification qAiScorer
     ]
 
@@ -30,11 +27,9 @@ description <https://hongyan.github.io/review-gate/model/grading#> as grading {
         gate:hasId "G-HUMAN-REF"
         gate:label "Rule-derived human reference"
         gate:isDeployedIn dGrading
-        gate:runsVersion common:vSeedSet2026a
+        gate:runsVersion versions:vSeedSet2026a
         gate:holdsQualification qHumanRef
     ]
-
-    // checkpoints
 
     @dc:description "Where every syllabus is scored by the AI."
     instance cpAiScorer : gate:Checkpoint [
@@ -54,34 +49,37 @@ description <https://hongyan.github.io/review-gate/model/grading#> as grading {
         gate:verdictRule "A goal's mean of the two raters' 0-3 ratings at or above 2 reads as approve; below it reads as reject. A convenience rule, not adjudication."
     ]
 
-    // guards (with tolerances)
+    @dc:description "The AI scoring checkpoint guards against missed goals."
     relation instance gdScorerMissed : gate:Guards [
         from cpAiScorer
-        to common:ecMissedCritical
+        to errors:ecMissedCritical
         gate:toleranceLabel "at most 3 missed goals per 60 double-rated syllabi"
         gate:toleranceMaxMissed 3
         gate:toleranceSampleSize 60
     ]
 
+    @dc:description "It also guards against goal claims that are not supported."
     relation instance gdScorerUnsupported : gate:Guards [
         from cpAiScorer
-        to common:ecUnsupportedClaim
+        to errors:ecUnsupportedClaim
         gate:toleranceLabel "at most 6 unsupported goal claims per 60 syllabi"
         gate:toleranceMaxMissed 6
         gate:toleranceSampleSize 60
     ]
 
+    @dc:description "The human reference guards missed goals at a tighter tolerance than the AI scorer."
     relation instance gdHumanMissed : gate:Guards [
         from cpHumanRef
-        to common:ecMissedCritical
+        to errors:ecMissedCritical
         gate:toleranceLabel "at most 2 missed goals per 60 syllabi"
         gate:toleranceMaxMissed 2
         gate:toleranceSampleSize 60
     ]
 
+    @dc:description "It also guards against unsupported goal claims, again more tightly."
     relation instance gdHumanUnsupported : gate:Guards [
         from cpHumanRef
-        to common:ecUnsupportedClaim
+        to errors:ecUnsupportedClaim
         gate:toleranceLabel "at most 3 unsupported goal claims per 60 syllabi"
         gate:toleranceMaxMissed 3
         gate:toleranceSampleSize 60
@@ -90,21 +88,19 @@ description <https://hongyan.github.io/review-gate/model/grading#> as grading {
     @dc:description "Only the human reference guards bias. Nothing here may go undetected, hence 0."
     relation instance gdHumanBias : gate:Guards [
         from cpHumanRef
-        to common:ecBias
+        to errors:ecBias
         gate:toleranceLabel "no systematic shift beyond half a scale point over 60 syllabi"
         gate:toleranceMaxMissed 0
         gate:toleranceSampleSize 60
     ]
 
-    // qualification records
-
     @dc:description "Qualification of the AI scorer, on the ten-field template."
     instance qAiScorer : gate:QualificationRecord [
         gate:hasId "QR-SCORER-1"
         gate:label "Qualification of the AI scorer at gemma4_31b"
-        gate:certifiesVersion common:vGemma431b
-        gate:qualifiesFor common:ecMissedCritical
-        gate:qualifiesFor common:ecUnsupportedClaim
+        gate:certifiesVersion versions:vGemma431b
+        gate:qualifiesFor errors:ecMissedCritical
+        gate:qualifiesFor errors:ecUnsupportedClaim
         gate:qualifiedTolerance "miss rate upper bound within tolerance on the 60-syllabus double-rated set"
         trace:sourceRef "Qualification record template; illustrative instance"
     ]
@@ -113,15 +109,13 @@ description <https://hongyan.github.io/review-gate/model/grading#> as grading {
     instance qHumanRef : gate:QualificationRecord [
         gate:hasId "QR-HUMAN-REF-1"
         gate:label "Calibration of the human reference on seedset-2026a"
-        gate:certifiesVersion common:vSeedSet2026a
-        gate:qualifiesFor common:ecMissedCritical
-        gate:qualifiesFor common:ecUnsupportedClaim
-        gate:qualifiesFor common:ecBias
+        gate:certifiesVersion versions:vSeedSet2026a
+        gate:qualifiesFor errors:ecMissedCritical
+        gate:qualifiesFor errors:ecUnsupportedClaim
+        gate:qualifiesFor errors:ecBias
         gate:qualifiedTolerance "two-rater agreement recorded on the 60-syllabus set"
         trace:sourceRef "Agreement pilot data files"
     ]
-
-    // release policies (one per provenance path, this deployment only)
 
     @dc:description "Human-authored syllabi are scored by the AI and checked against the human reference."
     instance pGradeHumanAuthored : gate:ReleasePolicy [
@@ -152,8 +146,6 @@ description <https://hongyan.github.io/review-gate/model/grading#> as grading {
         gate:requiresCheckpoint cpAiScorer
     ]
 
-    // artifacts
-
     @dc:description "A human-authored syllabus from the scored corpus."
     instance artSyllabus1 : gate:Artifact [
         gate:hasId "SYL-0001"
@@ -170,9 +162,6 @@ description <https://hongyan.github.io/review-gate/model/grading#> as grading {
         gate:hasProvenance "aiAssisted"
     ]
 
-    // review activities and records
-    // Deployment membership of activities and records is derived by rule, not asserted.
-
     @dc:description "The complete case: verdict, full record, qualification cited."
     instance raG1 : gate:ReviewActivity [
         gate:hasId "RA-G1"
@@ -187,14 +176,14 @@ description <https://hongyan.github.io/review-gate/model/grading#> as grading {
     instance vrG1 : gate:VerificationRecord [
         gate:hasId "VR-G1"
         gate:documents raG1
-        gate:addresses common:ecMissedCritical
+        gate:addresses errors:ecMissedCritical
         gate:claimText "Syllabus 1 covers the goals it claims"
         gate:detectionRoute "Goal-by-goal salience scoring against the fixed 17-goal list"
         gate:responsibleRole "qualityOwner"
         gate:knownResidual "Scores below 0.5 were not manually re-read"
     ]
 
-    @dc:description "A verdict with no verification record."
+    @dc:description "Scored below the threshold and rejected, with nothing recorded behind it."
     instance raG2 : gate:ReviewActivity [
         gate:hasId "RA-G2"
         gate:performedAt cpAiScorer
@@ -204,7 +193,7 @@ description <https://hongyan.github.io/review-gate/model/grading#> as grading {
         gate:citesQualification qAiScorer
     ]
 
-    @dc:description "A verdict with no verification record at all."
+    @dc:description "An approval from the human reference, with nothing recorded behind it."
     instance raG3 : gate:ReviewActivity [
         gate:hasId "RA-G3"
         gate:performedAt cpHumanRef
@@ -227,10 +216,52 @@ description <https://hongyan.github.io/review-gate/model/grading#> as grading {
     instance vrG4 : gate:VerificationRecord [
         gate:hasId "VR-G4"
         gate:documents raG4
-        gate:addresses common:ecBias
+        gate:addresses errors:ecBias
         gate:claimText "Syllabus 2 was over-scored by the AI relative to the human reference"
         gate:detectionRoute "Comparison of AI salience against the two-rater composite"
         gate:responsibleRole "qualityOwner"
         gate:knownResidual "Composite rule (mean of two raters at least 2) is a convenience rule, not adjudication"
+    ]
+
+    @dc:description "Repeat scoring of syllabus 1 by the AI scorer, run to check repeatability against RA-G1."
+    instance raG5 : gate:ReviewActivity [
+        gate:hasId "RA-G5"
+        gate:performedAt cpAiScorer
+        gate:evaluates artSyllabus1
+        gate:hasVerdict "approve"
+        gate:rawVerdictLabel "salience 0.79"
+        gate:citesQualification qAiScorer
+    ]
+
+    @dc:description "Human reference on syllabus 2, agreeing with the AI scorer's reject in RA-G2."
+    instance raG6 : gate:ReviewActivity [
+        gate:hasId "RA-G6"
+        gate:performedAt cpHumanRef
+        gate:evaluates artSyllabus2
+        gate:hasVerdict "reject"
+        gate:rawVerdictLabel "two-rater mean 1.0"
+        gate:citesQualification qHumanRef
+    ]
+
+    @dc:description "Record for the repeatability check behind RA-G5."
+    instance vrG5 : gate:VerificationRecord [
+        gate:hasId "VR-G5"
+        gate:documents raG5
+        gate:claimText "Syllabus 1 scores the same way on a second run"
+        gate:addresses errors:ecInconsistency
+        gate:detectionRoute "Compare salience in RA-G5 with RA-G1"
+        gate:responsibleRole "qualityOwner"
+        gate:knownResidual "Two runs only; the drift threshold has not been set"
+    ]
+
+    @dc:description "Record for the human reference verdict RA-G6."
+    instance vrG6 : gate:VerificationRecord [
+        gate:hasId "VR-G6"
+        gate:documents raG6
+        gate:claimText "Syllabus 2 does not cover the goals it claims"
+        gate:addresses errors:ecMissedCritical
+        gate:detectionRoute "Two raters scoring goal by goal against the fixed list"
+        gate:responsibleRole "qualityOwner"
+        gate:knownResidual "The two raters agree with each other; no third opinion was taken"
     ]
 }

@@ -1,0 +1,36 @@
+@dc:title "Error Classes"
+@dc:description "The kinds of review failure both deployments guard against. Owned by the quality owner and rarely changed."
+description <https://hongyan.github.io/review-gate/model/error-classes#> as errors {
+    uses <http://purl.org/dc/elements/1.1/> as dc
+    uses <https://hongyan.github.io/review-gate/method/gate#> as gate
+
+    @dc:description "A critical defect in the artifact that the review failed to catch."
+    instance ecMissedCritical : gate:ErrorClass [
+        gate:hasId "EC-1"
+        gate:label "Missed critical defect"
+    ]
+
+    @dc:description "A claim with no supporting justification."
+    instance ecUnsupportedClaim : gate:ErrorClass [
+        gate:hasId "EC-2"
+        gate:label "Unsupported claim"
+    ]
+
+    @dc:description "Systematic over- or under-judgment of a whole class of artifacts."
+    instance ecBias : gate:ErrorClass [
+        gate:hasId "EC-3"
+        gate:label "Systematic bias"
+    ]
+
+    @dc:description "The same artifact judged differently on repeated review."
+    instance ecInconsistency : gate:ErrorClass [
+        gate:hasId "EC-4"
+        gate:label "Inconsistent judgment"
+    ]
+
+    @dc:description "Judgment driven by irrelevant features, such as length or formatting. No checkpoint guards this one."
+    instance ecIrrelevantFeature : gate:ErrorClass [
+        gate:hasId "EC-5"
+        gate:label "Construct-irrelevant variance"
+    ]
+}

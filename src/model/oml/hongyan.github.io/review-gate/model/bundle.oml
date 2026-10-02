@@ -3,7 +3,8 @@
 description bundle <https://hongyan.github.io/review-gate/model/bundle#> as d-bundle {
     uses <http://purl.org/dc/elements/1.1/> as dc
     uses <https://hongyan.github.io/review-gate/method/bundle#>
-    includes <https://hongyan.github.io/review-gate/model/common#>
+    includes <https://hongyan.github.io/review-gate/model/error-classes#>
+    includes <https://hongyan.github.io/review-gate/model/versions#>
     includes <https://hongyan.github.io/review-gate/model/code-review#>
     includes <https://hongyan.github.io/review-gate/model/grading#>
 }

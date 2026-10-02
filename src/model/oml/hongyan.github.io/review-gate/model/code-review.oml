@@ -4,9 +4,8 @@ description <https://hongyan.github.io/review-gate/model/code-review#> as code-r
     uses <http://purl.org/dc/elements/1.1/> as dc
     uses <https://hongyan.github.io/review-gate/method/gate#> as gate
     uses <https://hongyan.github.io/review-gate/method/trace#> as trace
-    extends <https://hongyan.github.io/review-gate/model/common#> as common
-
-    // deployment
+    extends <https://hongyan.github.io/review-gate/model/error-classes#> as errors
+    extends <https://hongyan.github.io/review-gate/model/versions#> as versions
 
     @dc:description "The code-review installation. The human review role is designed but not yet staffed."
     instance dCodeReview : gate:Deployment [
@@ -14,14 +13,12 @@ description <https://hongyan.github.io/review-gate/model/code-review#> as code-r
         gate:label "Code review (design stage)"
     ]
 
-    // gauges
-
     @dc:description "The code-review AI gauge. Runs v2 while its only qualification certifies v1."
     instance gCodeAI : gate:AIGauge [
         gate:hasId "G-CODE-AI"
         gate:label "AI code reviewer"
         gate:isDeployedIn dCodeReview
-        gate:runsVersion common:vCodeModelV2
+        gate:runsVersion versions:vCodeModelV2
         gate:holdsQualification qCodeAI
     ]
 
@@ -31,8 +28,6 @@ description <https://hongyan.github.io/review-gate/model/code-review#> as code-r
         gate:label "Student reviewer (role designed, not yet staffed)"
         gate:isDeployedIn dCodeReview
     ]
-
-    // checkpoints
 
     @dc:description "Where every change is reviewed by the AI."
     instance cpAiReview : gate:Checkpoint [
@@ -60,10 +55,10 @@ description <https://hongyan.github.io/review-gate/model/code-review#> as code-r
         gate:isOperatedBy gCodeAI
     ]
 
-    // guards (with tolerances)
+    @dc:description "The AI review checkpoint guards against missed critical defects."
     relation instance gdAiMissed : gate:Guards [
         from cpAiReview
-        to common:ecMissedCritical
+        to errors:ecMissedCritical
         gate:toleranceLabel "at most 1 missed critical defect per 20 seeded"
         gate:toleranceMaxMissed 1
         gate:toleranceSampleSize 20
@@ -72,42 +67,40 @@ description <https://hongyan.github.io/review-gate/model/code-review#> as code-r
     @dc:description "The AI checkpoint repeats its review of the same change and counts its own verdict flips."
     relation instance gdAiInconsistency : gate:Guards [
         from cpAiReview
-        to common:ecInconsistency
+        to errors:ecInconsistency
         gate:toleranceLabel "at most 2 verdict flips per 20 repeated reviews"
         gate:toleranceMaxMissed 2
         gate:toleranceSampleSize 20
     ]
 
+    @dc:description "The human review checkpoint guards against missed critical defects."
     relation instance gdHumanMissed : gate:Guards [
         from cpHumanReview
-        to common:ecMissedCritical
+        to errors:ecMissedCritical
         gate:toleranceLabel "at most 1 missed critical defect per 20 seeded"
         gate:toleranceMaxMissed 1
         gate:toleranceSampleSize 20
     ]
 
+    @dc:description "It also guards against change justifications that are not supported."
     relation instance gdHumanUnsupported : gate:Guards [
         from cpHumanReview
-        to common:ecUnsupportedClaim
+        to errors:ecUnsupportedClaim
         gate:toleranceLabel "at most 2 unsupported change justifications per 20"
         gate:toleranceMaxMissed 2
         gate:toleranceSampleSize 20
     ]
 
-    // qualification records
-
     @dc:description "Certifies configuration v1 only. The gauge now runs v2."
     instance qCodeAI : gate:QualificationRecord [
         gate:hasId "QR-CODE-AI-1"
         gate:label "Qualification of the AI code reviewer at configuration v1"
-        gate:certifiesVersion common:vCodeModelV1
-        gate:qualifiesFor common:ecMissedCritical
-        gate:qualifiesFor common:ecInconsistency
+        gate:certifiesVersion versions:vCodeModelV1
+        gate:qualifiesFor errors:ecMissedCritical
+        gate:qualifiesFor errors:ecInconsistency
         gate:qualifiedTolerance "zero misses on 59 seeded artifacts (5 percent bound)"
         trace:sourceRef "Seeded-defect qualification run; illustrative instance"
     ]
-
-    // release policies (one per provenance path, this deployment only)
 
     @dc:description "Human-authored changes clear the human review and the AI review."
     instance pCodeHumanAuthored : gate:ReleasePolicy [
@@ -138,15 +131,13 @@ description <https://hongyan.github.io/review-gate/model/code-review#> as code-r
         gate:requiresCheckpoint cpAiReview
     ]
 
-    // artifacts
-
     @dc:description "A test change carrying a known critical defect."
     instance artChange1 : gate:Artifact [
         gate:hasId "CHG-0001"
         gate:label "Code change 1 (AI-generated, seeded critical defect)"
         gate:isDeployedIn dCodeReview
         gate:hasProvenance "aiGenerated"
-        gate:hasKnownDefectIn common:ecMissedCritical
+        gate:hasKnownDefectIn errors:ecMissedCritical
     ]
 
     @dc:description "A human-authored change with no seeded defect."
@@ -156,9 +147,6 @@ description <https://hongyan.github.io/review-gate/model/code-review#> as code-r
         gate:isDeployedIn dCodeReview
         gate:hasProvenance "humanAuthored"
     ]
-
-    // review activities and records
-    // Deployment membership of activities and records is derived by rule, not asserted.
 
     @dc:description "Approved a change that carries a seeded critical defect."
     instance raC1 : gate:ReviewActivity [
@@ -174,10 +162,72 @@ description <https://hongyan.github.io/review-gate/model/code-review#> as code-r
     instance vrC1 : gate:VerificationRecord [
         gate:hasId "VR-C1"
         gate:documents raC1
-        gate:addresses common:ecMissedCritical
+        gate:addresses errors:ecMissedCritical
         gate:claimText "Change 1 introduces no critical defect"
         gate:detectionRoute "Static analysis plus diff review against the seeded defect list"
         gate:responsibleRole "qualityOwner"
         gate:knownResidual "The seeded critical defect in change 1 was approved: a recorded miss"
+    ]
+
+    @dc:description "The human review checkpoint also guards the AI reviewer against systematic bias, by comparing its verdicts with the human's on the same changes."
+    relation instance gdHumanBias : gate:Guards [
+        from cpHumanReview
+        to errors:ecBias
+        gate:toleranceLabel "at most 1 systematic disagreement pattern per 20 paired reviews"
+        gate:toleranceMaxMissed 1
+        gate:toleranceSampleSize 20
+    ]
+
+    @dc:description "First AI review of the human-authored change. Approved, and both classes the checkpoint guards are recorded."
+    instance raC2 : gate:ReviewActivity [
+        gate:hasId "RA-C2"
+        gate:performedAt cpAiReview
+        gate:evaluates artChange2
+        gate:hasVerdict "approve"
+        gate:rawVerdictLabel "LGTM"
+        gate:citesQualification qCodeAI
+    ]
+
+    @dc:description "Repeat AI review of change 1. The verdict flipped from the approve in RA-C1, which is what the inconsistency guard counts."
+    instance raC3 : gate:ReviewActivity [
+        gate:hasId "RA-C3"
+        gate:performedAt cpAiReview
+        gate:evaluates artChange1
+        gate:hasVerdict "reject"
+        gate:rawVerdictLabel "blocking comment"
+        gate:citesQualification qCodeAI
+    ]
+
+    @dc:description "Record for the missed-defect class checked in RA-C2."
+    instance vrC2 : gate:VerificationRecord [
+        gate:hasId "VR-C2"
+        gate:documents raC2
+        gate:claimText "Change 2 introduces no critical defect"
+        gate:addresses errors:ecMissedCritical
+        gate:detectionRoute "Static analysis plus diff review"
+        gate:responsibleRole "qualityOwner"
+        gate:knownResidual "No seeded defect exists for change 2, so a miss here could not be detected"
+    ]
+
+    @dc:description "Record for the inconsistency class checked in RA-C2. One record per class, so the activity has two."
+    instance vrC2b : gate:VerificationRecord [
+        gate:hasId "VR-C2B"
+        gate:documents raC2
+        gate:claimText "The verdict on change 2 would hold on a repeat AI review"
+        gate:addresses errors:ecInconsistency
+        gate:detectionRoute "Repeat the AI review of change 2 and compare with RA-C2"
+        gate:responsibleRole "qualityOwner"
+        gate:knownResidual "No repeat review of change 2 has been run yet"
+    ]
+
+    @dc:description "Record for the flip that RA-C3 exposed."
+    instance vrC3 : gate:VerificationRecord [
+        gate:hasId "VR-C3"
+        gate:documents raC3
+        gate:claimText "The AI reviewer's verdict on change 1 flipped between RA-C1 and RA-C3"
+        gate:addresses errors:ecInconsistency
+        gate:detectionRoute "Paired comparison of the two verdicts on the same change"
+        gate:responsibleRole "qualityOwner"
+        gate:knownResidual "One flip in two reviews; the tolerance is two per twenty"
     ]
 }

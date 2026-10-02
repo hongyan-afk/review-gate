@@ -1,8 +1,9 @@
 # Review Gate
 
-An OML model of a human-AI review gate process, built for SIE 502. One vocabulary, two
-deployments of the same process: code review, still at the design stage, and AI scoring of
-course syllabi, which is running.
+An OML model of a human-AI review gate process. One vocabulary, two deployments of the same
+process: code review, still at the design stage, and AI scoring of course syllabi, which is
+running. It also has a small method: five authoring patterns, each with its own editor, and
+a `METHOD.md`.
 
 ## What the system is
 
@@ -11,8 +12,8 @@ one deployment, a course syllabus in the other. Each checkpoint is staffed by ex
 gauge, and a gauge is a reviewer treated as a measuring instrument: it holds qualification
 records saying which error classes it is qualified for, at what tolerance, and for which
 configuration version. A release policy says which checkpoints an artifact has to clear on
-each provenance path. Every review activity yields a verdict and a five-part verification
-record.
+each provenance path. Every review activity issues a verdict, which a five-part
+verification record is supposed to back up.
 
 Human reviewers and AI evaluators are one concept here. Both are qualified the same way. What
 differs is only what the qualification is pinned to: a calibration batch for a person, a
@@ -22,22 +23,33 @@ configuration version for a model.
 
 ```
 src/method/oml/hongyan.github.io/review-gate/method/
-    trace.oml    what a record is, and how records trace to one another
-    gate.oml     the review gate vocabulary, start here
-    bundle.oml   the vocabulary bundle
+    trace.oml            what a record is, and how records trace to one another
+    gate.oml             the review gate vocabulary, start here
+    bundle.oml           the vocabulary bundle
+
+src/method/md/hongyan.github.io/review-gate/method/
+    METHOD.md            what the method prescribes, in what order, and why
+    checkpoints.md       a checkpoint and what it guards, at what tolerance
+    gauges.md            gauges, human and AI, and the version an AI gauge runs
+    release-policies.md  which checkpoints each provenance path has to clear
+    activities.md        one execution of a checkpoint on an artifact
+    records.md           the five-part record behind a verdict
 
 src/model/oml/hongyan.github.io/review-gate/model/
-    common.oml       what both deployments share: error classes and configuration versions
-    grading.oml      the syllabus scoring deployment
-    code-review.oml  the code review deployment
-    bundle.oml       the description bundle
+    error-classes.oml    the kinds of review failure, shared by both deployments
+    versions.oml         configuration versions and calibration batches
+    grading.oml          the syllabus scoring deployment
+    code-review.oml      the code review deployment
+    bundle.oml           the description bundle
+
+src/model/md/
+    index.md             start page
+    Review Gate/         an overview and one page per deployment
 ```
 
-Read `gate.oml` first, then `common.oml`, then either deployment. At the end of `gate.oml`
-are five rules. They derive who performed an activity, which error classes it checked for,
-which deployment an activity and a record belong to, and which policy governs an artifact.
-`AiGeneratedArtifact` is defined with `=` rather than declared, so the reasoner classifies
-artifacts into it.
+Read `gate.oml` first, then `METHOD.md`, then either deployment page. The method pages are
+compose templates and each deployment page uses all five, so its tables edit that
+deployment's file.
 
 ## How to build it
 
@@ -46,11 +58,15 @@ npm install -g @oml/cli
 oml whoami
 oml start
 oml lint
+oml validate
 oml reason
+oml render
 ```
 
-`oml reason` writes entailments to `build/owl`. Last run 2026-09-13 on CLI 0.26.1: lint
-reports no errors and the model reasons consistent.
+`oml reason` writes entailments to `build/owl` and `oml render` writes the pages to
+`build/web`. Last run 2026-10-01 on CLI 0.26.5, description bundle, unique names on (the default): lint
+reports no errors, validation reports two warnings and no errors, and the model reasons
+consistent. The two warnings are left in on purpose; `METHOD.md` says why.
 
 ## The questions it has to answer
 
