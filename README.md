@@ -34,6 +34,7 @@ src/method/md/hongyan.github.io/review-gate/method/
     release-policies.md  which checkpoints each provenance path has to clear
     activities.md        one execution of a checkpoint on an artifact
     records.md           the five-part record behind a verdict
+    dashboard.md         the five questions asked of the reasoned model
 
 src/model/oml/hongyan.github.io/review-gate/model/
     error-classes.oml    the kinds of review failure, shared by both deployments
@@ -44,12 +45,14 @@ src/model/oml/hongyan.github.io/review-gate/model/
 
 src/model/md/
     index.md             start page
-    Review Gate/         an overview and one page per deployment
+    ANALYSIS.md          what the dashboard shows, question by question
+    Review Gate/         an overview, one page per deployment, and the dashboard
 ```
 
 Read `gate.oml` first, then `METHOD.md`, then either deployment page. The method pages are
 compose templates and each deployment page uses all five, so its tables edit that
-deployment's file.
+deployment's file. The dashboard is a compose template too, owned by the method, and
+`ANALYSIS.md` records what it found.
 
 ## How to build it
 
@@ -64,7 +67,7 @@ oml render
 ```
 
 `oml reason` writes entailments to `build/owl` and `oml render` writes the pages to
-`build/web`. Last run 2026-10-01 on CLI 0.26.5, description bundle, unique names on (the default): lint
+`build/web`. Last run 2026-10-04 on CLI 0.26.5, description bundle, unique names on (the default): lint
 reports no errors, validation reports five warnings and no errors, and the model reasons
 consistent. The five warnings are left in on purpose; `METHOD.md` says why.
 
