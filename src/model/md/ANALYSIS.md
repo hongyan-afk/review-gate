@@ -52,7 +52,7 @@ The human reviewer in the code review deployment has never been qualified. It is
 
 Two of the six policies have never governed an artifact, so their checkpoint lists have not been exercised. That is expected at this stage and is recorded here so it is not mistaken for coverage.
 
-VR-G5 records a check for inconsistency on a scoring run, but the AI scorer checkpoint does not guard inconsistency. The work is being done without a checkpoint that owns it. Nothing in the records pattern ties a record's error class to what its checkpoint guards, so this is a pattern gap. A rule on the records table could report it while the record is being written.
+VR-G5 records a check for inconsistency on a scoring run, but the AI scorer checkpoint does not guard inconsistency. The work is being done without a checkpoint that owns it. Nothing in the records pattern tied a record's error class to what its checkpoint guards, so this is a pattern gap. The records table now has a warning for it, so a record like this is reported while it is being written. VR-G5 itself stays as recorded; whether the AI scorer should guard inconsistency is a decision for the quality owner, not for the analysis.
 
 ## Computed analysis
 

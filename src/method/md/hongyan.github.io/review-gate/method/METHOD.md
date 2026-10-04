@@ -58,7 +58,7 @@ Validation distinguishes malformed data from a gap the process has.
 
 A violation is malformed data: a gauge with no type, a record with four parts, a policy requiring a checkpoint from another deployment. The dataset has none, and a deployment page that shows one is not finished.
 
-A warning is a gap in the process itself: a checkpoint that guards nothing, a verdict with no record behind it or no qualification under it, an AI gauge running a version no qualification covers. The dataset carries five on purpose, as positive controls: `cpFormatCheck` for the first question, `raG2` and `raG3` for the second, `gCodeAI` for the fourth, and `raG4` for the fifth. They are warnings so that the dataset still validates clean while the gaps stay visible in the table where they can be fixed. `oml validate` exits zero on warnings and non-zero on violations, so a build can stop on malformed data without stopping on a known gap.
+A warning is a gap in the process itself: a checkpoint that guards nothing, a verdict with no record behind it or no qualification under it, an AI gauge running a version no qualification covers. The dataset carries five on purpose, as positive controls: `cpFormatCheck` for the first question, `raG2` and `raG3` for the second, `gCodeAI` for the fourth, and `raG4` for the fifth. A sixth warning, on `vrG5`, was not planted; ANALYSIS.md explains it. They are warnings so that the dataset still validates clean while the gaps stay visible in the table where they can be fixed. `oml validate` exits zero on warnings and non-zero on violations, so a build can stop on malformed data without stopping on a known gap.
 
 ## What goes in prose
 

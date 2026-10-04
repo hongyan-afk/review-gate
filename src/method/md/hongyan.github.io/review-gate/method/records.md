@@ -17,7 +17,7 @@ template:
 ---
 # Verification Records
 
-A record is complete when all five parts are filled in, and this table flags one that is not. The reasoner cannot do this: a record with a missing part is not a contradiction, only an unknown. A verdict with no record at all is not a row here, since there is nothing to target; the activities table warns about it instead.
+A record is complete when all five parts are filled in, and this table flags one that is not. The reasoner cannot do this: a record with a missing part is not a contradiction, only an unknown. A verdict with no record at all is not a row here, since there is nothing to target; the activities table warns about it instead. A record that addresses an error class its activity's checkpoint does not guard is also a warning: the check was done, but no checkpoint owns it.
 
 ```table-editor
 ---
@@ -84,6 +84,18 @@ gate:VerificationRecordShape
         sh:minCount 1 ;
         sh:maxCount 1 ;
         sh:order 6 ;
+    ] ;
+    sh:sparql [
+        sh:severity sh:Warning ;
+        sh:message "This record addresses an error class that the checkpoint of its activity does not guard. Have that checkpoint guard the class, or attach the record to an activity whose checkpoint does." ;
+        sh:select """
+            PREFIX gate: <https://hongyan.github.io/review-gate/method/gate#>
+            SELECT $this WHERE {
+                $this gate:documents ?activity ;
+                      gate:addresses ?errorClass .
+                FILTER NOT EXISTS { ?activity gate:checksFor ?errorClass }
+            }
+        """ ;
     ] ;
     .
 ```
