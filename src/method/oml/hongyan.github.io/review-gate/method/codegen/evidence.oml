@@ -1,0 +1,154 @@
+description <https://hongyan.github.io/review-gate/method/codegen/evidence#> as evidence {
+
+	uses <http://opencaesar.io/codegen#> as codegen
+
+    instance EvidenceSpec : codegen:Spec [
+        codegen:construct """
+            PREFIX oml:      <http://opencaesar.io/oml#>
+            PREFIX codegen:  <http://opencaesar.io/codegen#>
+            PREFIX gate:     <https://hongyan.github.io/review-gate/method/gate#>
+            PREFIX evidence: <https://hongyan.github.io/review-gate/method/codegen/evidence#>
+
+            CONSTRUCT {
+                ?file a codegen:File ;
+                    codegen:path ?path ;
+                    codegen:template evidence:EvidenceTemplate ;
+                    codegen:root ?deployment .
+
+                ?deployment evidence:id ?deploymentId ;
+                    evidence:label ?deploymentLabel ;
+                    evidence:activity ?activity .
+
+                ?activity evidence:id ?activityId ;
+                    evidence:verdict ?verdict ;
+                    evidence:artifact ?artifactId ;
+                    evidence:provenance ?provenance ;
+                    evidence:checkpoint ?checkpointId ;
+                    evidence:gauge ?gaugeId ;
+                    evidence:runs ?runningId ;
+                    evidence:checks ?checkedId ;
+                    evidence:qualification ?qualification ;
+                    evidence:record ?record .
+
+                ?qualification evidence:id ?qualificationId ;
+                    evidence:version ?versionId ;
+                    evidence:covers ?coveredId .
+
+                ?record evidence:id ?recordId ;
+                    evidence:claim ?claim ;
+                    evidence:addresses ?addressedId ;
+                    evidence:route ?route ;
+                    evidence:role ?role ;
+                    evidence:residual ?residual .
+            }
+            WHERE {
+                ?deployment a gate:Deployment ;
+                    gate:hasId ?deploymentId ;
+                    gate:label ?deploymentLabel .
+                BIND(IRI(CONCAT("urn:file:evidence:", ?deploymentId)) AS ?file)
+                BIND(CONCAT("${path}/", ?deploymentId, "-evidence.md") AS ?path)
+
+                ?activity a gate:ReviewActivity ;
+                    gate:hasId ?activityId ;
+                    gate:hasVerdict ?verdict ;
+                    gate:evaluates ?artifact ;
+                    gate:performedAt ?checkpoint .
+                ?checkpoint gate:isDeployedIn ?deployment ;
+                    gate:hasId ?checkpointId ;
+                    gate:isOperatedBy ?gauge .
+                ?gauge gate:hasId ?gaugeId .
+                ?artifact gate:hasId ?artifactId ;
+                    gate:hasProvenance ?provenance .
+
+                OPTIONAL {
+                    ?gauge gate:runsVersion ?running .
+                    ?running gate:hasId ?runningId .
+                }
+
+                OPTIONAL {
+                    ?guards a gate:Guards ;
+                        oml:hasSource ?checkpoint ;
+                        oml:hasTarget ?checked .
+                    ?checked gate:hasId ?checkedId .
+                }
+
+                OPTIONAL {
+                    ?activity gate:citesQualification ?qualification .
+                    ?qualification gate:hasId ?qualificationId .
+                    OPTIONAL {
+                        ?qualification gate:certifiesVersion ?version .
+                        ?version gate:hasId ?versionId .
+                    }
+                    OPTIONAL {
+                        ?qualification gate:qualifiesFor ?covered .
+                        ?covered gate:hasId ?coveredId .
+                    }
+                }
+
+                OPTIONAL {
+                    ?record gate:documents ?activity ;
+                        gate:hasId ?recordId .
+                    OPTIONAL { ?record gate:claimText ?claim }
+                    OPTIONAL {
+                        ?record gate:addresses ?addressed .
+                        ?addressed gate:hasId ?addressedId .
+                    }
+                    OPTIONAL { ?record gate:detectionRoute ?route }
+                    OPTIONAL { ?record gate:responsibleRole ?role }
+                    OPTIONAL { ?record gate:knownResidual ?residual }
+                }
+            }
+        """
+        codegen:parameter "path"
+    ]
+
+    instance EvidenceTemplate : codegen:Template [
+        codegen:body """
+            {%- set deployment = object(file, "codegen:root") -%}
+            # Evidence chains: {{ object(deployment, "evidence:label") }}
+
+            One section per verdict, from the artifact through the checkpoint and gauge to the qualification it cites and the records behind it.
+
+            | Verdict | Decision | Qualification covers what was checked | Verification records |
+            | --- | --- | --- | --- |
+            {%- for activity in objects(deployment, "evidence:activity") | sort %}
+            {%- set qualification = object(activity, "evidence:qualification") %}
+            {%- set covered = objects(qualification, "evidence:covers") if qualification else [] %}
+            {%- set uncovered = [] %}
+            {%- for checked in objects(activity, "evidence:checks") %}{% if checked not in covered %}{% set _ = uncovered.push(checked) %}{% endif %}{% endfor %}
+            | {{ object(activity, "evidence:id") }} | {{ object(activity, "evidence:verdict") }} | {{ "yes" if qualification and not uncovered.length else "no" }} | {% for record in objects(activity, "evidence:record") | sort %}{{ object(record, "evidence:id") }}{% if not loop.last %}, {% endif %}{% else %}missing{% endfor %} |
+            {%- endfor %}
+            {% for activity in objects(deployment, "evidence:activity") | sort %}
+            {%- set qualification = object(activity, "evidence:qualification") %}
+            {%- set covered = objects(qualification, "evidence:covers") if qualification else [] %}
+            {%- set running = objects(activity, "evidence:runs") | sort %}
+            {%- set checks = objects(activity, "evidence:checks") | sort %}
+
+            ## {{ object(activity, "evidence:id") }}: {{ object(activity, "evidence:verdict") }}
+
+            - Artifact: {{ object(activity, "evidence:artifact") }} ({{ object(activity, "evidence:provenance") }})
+            - Checkpoint: {{ object(activity, "evidence:checkpoint") }}, operated by {{ object(activity, "evidence:gauge") }}{% if running.length %}, running {{ running | join(", ") }}{% endif %}
+            - Checked for: {{ checks | join(", ") or "nothing" }}
+            {%- if qualification %}
+            - Qualification: {{ object(qualification, "evidence:id") }}, certifies {{ object(qualification, "evidence:version") or "no version" }}, covers {{ covered | sort | join(", ") }}
+            {%- for checked in checks %}{% if checked not in covered %}
+            - Not covered by the qualification: {{ checked }}
+            {%- endif %}{% endfor %}
+            {%- if running.length and object(qualification, "evidence:version") not in running %}
+            - The gauge runs {{ running | join(", ") }}, which the qualification does not certify
+            {%- endif %}
+            {%- else %}
+            - Qualification: none cited
+            {%- endif %}
+            {%- for record in objects(activity, "evidence:record") | sort %}
+            - Record {{ object(record, "evidence:id") }}: "{{ object(record, "evidence:claim") }}", addresses {{ object(record, "evidence:addresses") }}, detected by {{ object(record, "evidence:route") }}, signed off by {{ object(record, "evidence:role") }}, known residual: {{ object(record, "evidence:residual") }}
+            {%- if object(record, "evidence:addresses") not in checks %}
+            - The record addresses {{ object(record, "evidence:addresses") }}, which the checkpoint does not guard
+            {%- endif %}
+            {%- else %}
+            - Record: missing
+            {%- endfor %}
+            {%- endfor %}
+        """
+    ]
+}

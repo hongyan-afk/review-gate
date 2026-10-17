@@ -1,0 +1,18 @@
+description <https://hongyan.github.io/review-gate/model/codegen/configs#> as configs {
+
+	uses <http://opencaesar.io/codegen#> as codegen
+
+	extends <https://hongyan.github.io/review-gate/method/codegen/evidence#> as evidence
+
+    instance grading : codegen:Config [
+        codegen:spec evidence:EvidenceSpec
+        codegen:context "https://hongyan.github.io/review-gate/model/grading"
+        codegen:binding [codegen:key "path" codegen:value "build/docs"]
+    ]
+
+    instance codeReview : codegen:Config [
+        codegen:spec evidence:EvidenceSpec
+        codegen:context "https://hongyan.github.io/review-gate/model/code-review"
+        codegen:binding [codegen:key "path" codegen:value "build/docs"]
+    ]
+}
