@@ -4,14 +4,18 @@ oml-code:
 
 # project npm settings
 project:
-  name: "@oml/review-gate"
-  version: 1.0.0
+  name: "@hongyan-afk/review-gate"
+  version: 0.7.0
   title: Review Gate
   description: The Review Gate ontologies.
 
 # source folders
 sources:
   - src
+
+# packing settings
+pack:
+  - include: [src/method]
 
 # oml server settings
 # By default the server binds a free port chosen by the OS (the actual port is
@@ -26,3 +30,4 @@ defaults:
   export: -o build/owl
   reason: -o build/owl
   render: -m src/model/md -b build/web -c src/model/oml/hongyan.github.io/review-gate/model/bundle.oml
+  pack: -o build/dist
