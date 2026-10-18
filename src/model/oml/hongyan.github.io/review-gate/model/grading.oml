@@ -165,7 +165,7 @@ description <https://hongyan.github.io/review-gate/model/grading#> as grading {
     @dc:description "The complete case: verdict, full record, qualification cited."
     instance raG1 : gate:ReviewActivity [
         gate:hasId "RA-G1"
-        gate:performedAt cpAiScorer
+        gate:performedAt cpAiScorerX
         gate:evaluates artSyllabus1
         gate:hasVerdict "approve"
         gate:rawVerdictLabel "salience 0.83"
