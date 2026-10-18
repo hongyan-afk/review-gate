@@ -1,6 +1,6 @@
 # Analysis
 
-Each question from the scope statement, the evidence for it on the dashboard, and what that evidence means. The run behind this page is from 2026-10-04 over the description bundle.
+Each question from the scope statement, the evidence for it on the dashboard, and what that evidence means. The run behind this page is from 2026-10-18 over the description bundle. The evidence report generator, `oml codegen -c grading` and `oml codegen -c codeReview`, lists the same gaps verdict by verdict.
 
 The dataset carries planted gaps on purpose, at least one for each question, and METHOD.md lists the ones validation reports. When a check finds a planted gap, that shows the check works. The findings marked as not planted are things the analysis turned up.
 

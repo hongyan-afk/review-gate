@@ -70,7 +70,7 @@ oml render
 
 `oml reason` writes entailments to `build/owl` and `oml render` writes the pages to
 `build/web`. `oml codegen -c grading` and `oml codegen -c codeReview` write each deployment's
-evidence report to `build/docs`, and `oml pack` packs `src/method` as `@hongyan-afk/review-gate`. Last run 2026-10-04 on CLI 0.26.5, description bundle, unique names on (the default): lint
+evidence report to `build/docs`, and `oml pack` packs `src/method` as `@hongyan-afk/review-gate`. Last run 2026-10-18 on CLI 0.26.6, description bundle, unique names on (the default): lint
 reports no errors, validation reports six warnings and no errors, and the model reasons
 consistent. Five warnings are left in on purpose and one is a real finding; `METHOD.md` and
 `src/model/md/ANALYSIS.md` say which.
