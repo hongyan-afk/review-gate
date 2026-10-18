@@ -1,5 +1,8 @@
 # Review Gate
 
+[![Release](https://img.shields.io/github/v/release/hongyan-afk/review-gate)](https://github.com/hongyan-afk/review-gate/releases/latest)
+[![Live Site](https://img.shields.io/badge/Live-Site-brightgreen)](https://hongyan-afk.github.io/review-gate/)
+
 An OML model of a human-AI review gate process. One vocabulary, two deployments of the same
 process: code review, still at the design stage, and AI scoring of course syllabi, which is
 running. It also has a small method: five authoring patterns, each with its own editor, and
