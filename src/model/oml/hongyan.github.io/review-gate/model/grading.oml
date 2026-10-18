@@ -165,7 +165,7 @@ description <https://hongyan.github.io/review-gate/model/grading#> as grading {
     @dc:description "The complete case: verdict, full record, qualification cited."
     instance raG1 : gate:ReviewActivity [
         gate:hasId "RA-G1"
-        gate:performedAt cpAiScorerX
+        gate:performedAt cpAiScorer
         gate:evaluates artSyllabus1
         gate:hasVerdict "approve"
         gate:rawVerdictLabel "salience 0.83"
@@ -180,7 +180,6 @@ description <https://hongyan.github.io/review-gate/model/grading#> as grading {
         gate:claimText "Syllabus 1 covers the goals it claims"
         gate:detectionRoute "Goal-by-goal salience scoring against the fixed 17-goal list"
         gate:responsibleRole "qualityOwner"
-        gate:knownResidual "Scores below 0.5 were not manually re-read"
     ]
 
     @dc:description "Scored below the threshold and rejected, with nothing recorded behind it."
