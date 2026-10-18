@@ -23,7 +23,7 @@ description <https://hongyan.github.io/review-gate/model/grading#> as grading {
     ]
 
     @dc:description "The human reference: two raters combined by a stated rule, a goal counts as present when their mean is at least 2."
-    instance gHumanRef : gate:HumanGauge, gate:AIGauge [
+    instance gHumanRef : gate:HumanGauge [
         gate:hasId "G-HUMAN-REF"
         gate:label "Rule-derived human reference"
         gate:isDeployedIn dGrading
