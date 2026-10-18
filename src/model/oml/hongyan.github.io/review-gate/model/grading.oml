@@ -23,7 +23,7 @@ description <https://hongyan.github.io/review-gate/model/grading#> as grading {
     ]
 
     @dc:description "The human reference: two raters combined by a stated rule, a goal counts as present when their mean is at least 2."
-    instance gHumanRef : gate:HumanGauge [
+    instance gHumanRef : gate:HumanGauge, gate:AIGauge [
         gate:hasId "G-HUMAN-REF"
         gate:label "Rule-derived human reference"
         gate:isDeployedIn dGrading
@@ -180,6 +180,7 @@ description <https://hongyan.github.io/review-gate/model/grading#> as grading {
         gate:claimText "Syllabus 1 covers the goals it claims"
         gate:detectionRoute "Goal-by-goal salience scoring against the fixed 17-goal list"
         gate:responsibleRole "qualityOwner"
+        gate:knownResidual "Scores below 0.5 were not manually re-read"
     ]
 
     @dc:description "Scored below the threshold and rejected, with nothing recorded behind it."
